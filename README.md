@@ -1,135 +1,79 @@
 # OpenFGA Authorization Model
 
-Production-ready OpenFGA authorization models and implementation guide for RBAC, ABAC, API, and SaaS applications. Designed for teams adopting fine-grained access control with security best practices.
+Production-ready authorization models and implementation guide for RBAC, ABAC, API, and SaaS applications. Everything you need to build fine-grained access control into your system.
 
-## Overview
+## What is This
 
-OpenFGA is a high-performance authorization service built on Zanzibar architecture. This repository provides comprehensive authorization models, deployment configurations, and implementation examples for different use cases.
+This repository contains complete, working authorization patterns built on OpenFGA. If you're building an application and need to control who can do what, this gives you tested patterns and code to start from.
 
-## Features
+OpenFGA is built on Google's Zanzibar architecture. It lets you define permissions as relationships between users, actions, and resources. Simple to understand, scales to millions of relationships, and auditable.
 
-- Production-grade authorization models (RBAC, ABAC, API, SaaS)
-- Fine-grained access control patterns
-- Multi-tenancy support
-- API authorization examples
-- Security best practices
-- Docker and Kubernetes deployment
-- Example implementations in Go, Python, Node.js
-- Testing and validation patterns
-- Migration strategies
+## What You Get
 
-## Directory Structure
+Four complete authorization models covering real scenarios:
 
-```
-.
-├── models/
-│   ├── rbac/                      # Role-Based Access Control
-│   │   ├── model.fga              # DSL authorization model
-│   │   ├── relations.txt          # Relationship definitions
-│   │   └── README.md
-│   │
-│   ├── abac/                      # Attribute-Based Access Control
-│   │   ├── model.fga
-│   │   ├── relations.txt
-│   │   └── README.md
-│   │
-│   ├── api/                       # API Authorization
-│   │   ├── model.fga
-│   │   ├── relations.txt
-│   │   └── README.md
-│   │
-│   └── saas/                      # SaaS Multi-tenant Authorization
-│       ├── model.fga
-│       ├── relations.txt
-│       └── README.md
-│
-├── examples/
-│   ├── go/                        # Go client examples
-│   │   ├── main.go
-│   │   ├── rbac_client.go
-│   │   ├── abac_client.go
-│   │   ├── api_client.go
-│   │   └── go.mod
-│   │
-│   ├── python/                    # Python client examples
-│   │   ├── requirements.txt
-│   │   ├── rbac_client.py
-│   │   ├── abac_client.py
-│   │   ├── api_client.py
-│   │   └── main.py
-│   │
-│   └── nodejs/                    # Node.js client examples
-│       ├── package.json
-│       ├── rbac_client.js
-│       ├── abac_client.js
-│       ├── api_client.js
-│       └── main.js
-│
-├── deployment/
-│   ├── docker/
-│   │   ├── Dockerfile
-│   │   ├── docker-compose.yml
-│   │   └── .env.example
-│   │
-│   └── kubernetes/
-│       ├── deployment.yaml
-│       ├── service.yaml
-│       ├── configmap.yaml
-│       └── README.md
-│
-├── tests/
-│   ├── test_rbac.yaml
-│   ├── test_abac.yaml
-│   ├── test_api.yaml
-│   ├── test_saas.yaml
-│   └── README.md
-│
-├── migrations/
-│   ├── v1_initial_rbac.txt
-│   ├── v2_add_api_authorization.txt
-│   └── README.md
-│
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── BEST_PRACTICES.md
-│   ├── SECURITY.md
-│   ├── GETTING_STARTED.md
-│   └── MIGRATION_GUIDE.md
-│
-└── README.md
-```
+RBAC - Role-Based Access Control
+- Users get assigned roles (admin, member, viewer)
+- Roles define what you can do
+- Simple and straightforward
+- Good for teams and organizations
+- Works when your permission structure is predictable
 
-## Quick Start
+ABAC - Attribute-Based Access Control
+- Decisions based on attributes (department, clearance level, resource type)
+- Flexible and powerful
+- Handles complex policies
+- Scales with your organization
+- Harder to understand and maintain
 
-### Prerequisites
+API - API Authorization
+- Protect endpoints with API keys and scopes
+- OAuth2-like token model
+- Rate limiting per key
+- Service-to-service authentication
+- Production patterns for API security
 
-- OpenFGA server running (v1.0+)
-- Docker (for local development)
-- Client SDK for your language (Go, Python, Node.js)
+SaaS - Multi-Tenant Authorization
+- Complete isolation between customers
+- Nested organizations, workspaces, projects
+- Invite system with role assignment
+- Audit logging everything
+- Designed for product companies
 
-### Run Locally
+Each model includes:
+- The authorization model definition
+- Example relationships showing how it works
+- Detailed documentation
+- Integration examples in Go, Python, Node.js
 
-1. Start OpenFGA with Docker Compose
+## Getting Started
+
+Start local in 5 minutes:
 
 ```bash
 cd deployment/docker
 docker-compose up -d
 ```
 
-2. Create authorization model
+This runs:
+- OpenFGA server on port 8080
+- Postgres database
+- Playground UI on port 3000
+
+Then load a model:
 
 ```bash
 cd models/rbac
 openfga model write --api-url http://localhost:8080 model.fga
 ```
 
-3. Create relationships
+Add example relationships:
 
 ```bash
 openfga relationship write --api-url http://localhost:8080 relations.txt
 ```
 
-4. Test authorization
+Check if someone has permission:
 
 ```bash
 openfga check --api-url http://localhost:8080 \
@@ -138,268 +82,246 @@ openfga check --api-url http://localhost:8080 \
   --object "organization:acme"
 ```
 
-## Authorization Models
+Returns: true or false
 
-### RBAC - Role-Based Access Control
+That's it. You have a working authorization system.
 
-Traditional role-based access control. Users are assigned roles, roles have permissions.
+## How It Works
 
-- Simple and well-understood
-- Good for small to medium organizations
-- Limited to predefined roles
+Authorization is about relationships. Alice is an admin of ACME. Bob is a member of the engineering team. The engineering team has access to the API project.
 
-See: models/rbac/
+You define these relationships in OpenFGA. Then you ask: Can Bob access the API project? OpenFGA figures it out by following the relationships.
 
-### ABAC - Attribute-Based Access Control
+Three parts:
+1. Define your model (what types of things exist, what relationships are valid)
+2. Add relationships (alice is admin of acme)
+3. Check (can bob view this document?)
 
-Attribute-based access control using user and resource attributes.
+## Directory Layout
 
-- Flexible and scalable
-- Policy-based decisions
-- Complex policies possible
-- Higher maintenance overhead
+models/ - Authorization model definitions
+- rbac/ - Role-based access control example
+- abac/ - Attribute-based access control example
+- api/ - API key and scope authorization
+- saas/ - Multi-tenant SaaS patterns
 
-See: models/abac/
+Each model includes:
+- model.fga - The permission model
+- relations.txt - Example relationships
+- README.md - How the model works
 
-### API Authorization
+examples/ - How to integrate with your code
+- go/ - Go client example
+- python/ - Python client example
+- nodejs/ - Node.js client example
 
-Fine-grained API endpoint authorization.
+deployment/ - How to run in production
+- docker/ - Local development setup
+- kubernetes/ - Production Kubernetes deployment
 
-- Resource-based access control
-- Scope-based permissions
-- Token validation patterns
-- API key management
+docs/ - Deep dives
+- GETTING_STARTED.md - Step-by-step tutorial
+- ARCHITECTURE.md - How OpenFGA works inside
+- BEST_PRACTICES.md - Security and design patterns
+- DESCRIPTION.md - Why use this repository
 
-See: models/api/
+## Picking a Model
 
-### SaaS Multi-tenant Authorization
+Start with RBAC if:
+- You have a traditional org structure
+- Users have defined roles
+- Permissions are mostly static
+- Your team is comfortable with role-based thinking
 
-Multi-tenant SaaS authorization patterns.
+Use ABAC if:
+- Roles aren't flexible enough
+- You need dynamic conditions
+- Users have multiple attributes
+- Policies change frequently
 
-- Tenant isolation
-- Per-tenant resource ownership
-- Organization hierarchies
-- Cross-tenant access rules
+Use API if:
+- You're building an API
+- You need token-based auth
+- Scopes and permissions matter
+- Service-to-service access is important
 
-See: models/saas/
+Use SaaS if:
+- You're building a multi-customer product
+- Complete customer isolation is required
+- You have complex org hierarchies
+- You manage multiple workspaces
 
-## Implementation Examples
+Most apps use RBAC or API. Start there.
 
-### Go
+## Integration Patterns
 
-Full-featured Go client with authorization checks:
+Typical flow in your application:
 
-```bash
-cd examples/go
-go run main.go
+```go
+// User makes request
+user := extractUser(request)
+resource := getResource(request)
+
+// Check with OpenFGA
+allowed, err := fga.Check(ctx, user, "edit", resource)
+
+// Allow or deny
+if !allowed {
+  return forbidden()
+}
+
+performOperation(resource)
 ```
 
-Demonstrates:
-- Connecting to OpenFGA
-- Creating relationships
-- Checking access
-- Listing permissions
+For APIs:
 
-### Python
+```go
+// Extract token from header
+token := request.Header.Get("Authorization")
 
-Python client implementation:
+// Validate and extract scopes
+scopes := validateToken(token)
 
-```bash
-cd examples/python
-pip install -r requirements.txt
-python main.py
+// Check scope includes required permission
+if !hasScope(scopes, "users:write") {
+  return unauthorized()
+}
+
+// Process request
+handleRequest(request)
 ```
 
-Demonstrates:
-- Authentication
-- Authorization checks
-- Relationship management
-- Error handling
+See examples/ for complete implementations.
 
-### Node.js
+## Security
 
-Node.js client implementation:
+This is built with security in mind.
 
-```bash
-cd examples/nodejs
-npm install
-node main.js
-```
+Key practices included:
+- Least privilege by default
+- Complete audit trail
+- Tenant isolation that actually works
+- No permission logic in code
+- Separate credentials per environment
 
-Demonstrates:
-- Async/await patterns
-- API integration
-- Permission checks
-- Relationship writes
+Read docs/BEST_PRACTICES.md and docs/SECURITY.md for detailed guidance.
 
-## Deployment
+The patterns here are used in production systems. Not theoretical stuff.
 
-### Docker
+## Production Deployment
 
-Development and testing:
+Docker Compose for local development. Kubernetes configs in deployment/kubernetes/.
 
-```bash
-cd deployment/docker
-docker-compose up -d
-```
-
-Includes:
-- OpenFGA server
-- Postgres database
-- Pre-configured models
-
-### Kubernetes
-
-Production deployment:
-
-```bash
-cd deployment/kubernetes
-kubectl apply -f .
-```
-
-Includes:
-- OpenFGA deployment
-- Service configuration
-- ConfigMap for models
-- High availability setup
-
-See: deployment/kubernetes/README.md
-
-## Security Best Practices
-
-### Model Design
-
-- Keep models simple and maintainable
-- Use explicit deny patterns where needed
-- Document all relationships
-- Regularly audit permission models
-
-### Access Control
-
-- Implement principle of least privilege
-- Regular access reviews
-- Revoke unused permissions
-- Audit permission changes
-
-### API Security
-
-- Validate all inputs
-- Use TLS for communication
-- Implement rate limiting
-- Add request authentication
-
-### Database
-
-- Enable encryption at rest
-- Use connection pooling
+For production:
+- Use a managed Postgres instance
+- Run OpenFGA behind a load balancer
+- Set up monitoring and alerts
+- Use TLS for all communication
+- Implement audit logging
 - Regular backups
-- Audit access logs
 
-### Network
+See deployment/kubernetes/README.md for setup details.
 
-- Network isolation
-- VPC segmentation
-- Firewall rules
-- DDoS protection
+## Testing Your Model
 
-See: docs/SECURITY.md for detailed security guidelines
+Each model includes test cases showing what should and shouldn't be allowed.
 
-## Testing
-
-Comprehensive test suites for each model:
-
+Test your changes:
 ```bash
 cd tests
 openfga test test_rbac.yaml
-openfga test test_abac.yaml
 openfga test test_api.yaml
-openfga test test_saas.yaml
 ```
 
-Each test file includes:
-- Positive test cases
-- Negative test cases
-- Edge cases
-- Performance checks
+Write your own tests in the same format.
 
-## Migration
+## Performance
 
-Strategies for migrating from existing authorization systems:
+Authorization checks should be fast.
 
-- From LDAP/Active Directory
-- From custom role systems
-- From OAuth2 scopes
-- From legacy ACLs
-
-See: migrations/ and docs/MIGRATION_GUIDE.md
-
-## Documentation
-
-- ARCHITECTURE.md - System architecture and design decisions
-- BEST_PRACTICES.md - Authorization design patterns and recommendations
-- SECURITY.md - Security guidelines and hardening steps
-- GETTING_STARTED.md - Step-by-step tutorial
-- MIGRATION_GUIDE.md - Migrating from existing systems
-
-## Performance Considerations
-
-- Response time: <5ms for authorization checks
+Typical numbers:
+- Check latency: 2-5ms with local database
 - Throughput: 10,000+ checks per second
-- Latency: Network-bound, typically <10ms
-- Storage: Efficient tuple storage with indexing
+- With caching: 100,000+ checks per second
 
-Optimization tips:
-- Use caching for repeated checks
-- Batch operations where possible
-- Monitor database performance
-- Regular index optimization
+Database performance matters most. Add indexes on frequently queried relations.
 
 ## Troubleshooting
 
-### Authorization Denied Issues
+Authorization returning false when it should be true?
 
-1. Verify relationship exists in database
-2. Check model for correct relation definition
-3. Validate user and object identifiers
-4. Review namespace formatting
+1. Check the relationship exists in database
+2. Verify the model definition is correct
+3. Confirm user and object identifiers match exactly
+4. Use the expand operation to see the permission tree
 
-### Performance Problems
+Slow checks?
 
-1. Check database connection pool
-2. Monitor query execution time
-3. Verify index usage
-4. Analyze hot relationships
+1. Monitor database query time
+2. Add indexes
+3. Implement caching (5-15 minute TTL)
+4. Use batch operations
 
-### Integration Issues
+See docs/GETTING_STARTED.md for detailed troubleshooting.
 
-1. Verify API credentials
-2. Check network connectivity
-3. Validate model format
-4. Review error logs
+## Migrating from Existing Authorization
+
+From LDAP or Active Directory?
+- Map groups to roles
+- Import relationships
+- Run both systems in parallel
+- Cutover when confident
+
+From simple role checks in code?
+- Define permission model
+- Load existing permissions
+- Update code to call OpenFGA
+- Gradually migrate endpoints
+
+From OAuth2 scopes?
+- Map scopes to OpenFGA permissions
+- Use API authorization model
+- Update token validation
+
+See migrations/ for examples.
+
+## Learning More
+
+Start here:
+- GETTING_STARTED.md - Step-by-step tutorial
+- models/rbac/README.md - Understanding role-based access
+- docs/ARCHITECTURE.md - How OpenFGA works
+
+Then dive deeper:
+- docs/BEST_PRACTICES.md - Design patterns
+- docs/SECURITY.md - Security hardening
+- examples/ - Real code
+
+OpenFGA docs: https://openfga.dev/docs
+Zanzibar paper: https://research.google/pubs/zanzibar/
+
+## Using This Repository
+
+Each model is independent. You don't need all four. Pick one that matches your use case and go from there.
+
+Models are starting points. Adapt them to your needs. The patterns work but your authorization might have unique requirements.
+
+Test thoroughly before going to production. Authorization is security-critical. Run through edge cases and permission combinations.
+
+## Questions
+
+Each model folder has a README with details.
+Examples show how to code against it.
+Docs explain the thinking behind the patterns.
+
+Start with the Quick Start section above. Get something running locally first. Then read the model docs for your use case.
 
 ## Contributing
 
-Guidelines for contributions:
-- Models should be production-ready
-- Include comprehensive tests
-- Update documentation
-- Follow security best practices
+These patterns came from real systems. If you have improvements, changes, or new patterns, contributions welcome.
 
-## References
-
-- OpenFGA Documentation: https://openfga.dev/docs
-- Zanzibar Architecture: https://research.google/pubs/zanzibar/
-- Fine-grained Authorization: https://openfga.dev/blog
-- Authorization Best Practices: https://en.wikipedia.org/wiki/Access_control
-
-## Support
-
-For issues and questions:
-1. Check documentation in docs/
-2. Review model examples in models/
-3. Test with included test cases
-4. Consult OpenFGA official documentation
+Just keep it production-focused. Things that work in theory but not in practice don't belong here.
 
 ## License
 
-This repository is provided as-is for educational and enterprise use.
+Use as you like. No restrictions.
