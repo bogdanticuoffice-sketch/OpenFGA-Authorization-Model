@@ -1,54 +1,44 @@
+# API authorization example tuples
+# Format: object#relation@user
+
 application:myapp#owner@user:alice
 application:myapp#admin@user:bob
+application:myapp#member@user:charlie
 
 api_key:key_1#application@application:myapp
 api_key:key_1#owner@user:alice
 api_key:key_1#created_by@user:alice
-api_key:key_1#scopes@string:users:read,users:write
-api_key:key_1#status@string:active
 
 api_key:key_2#application@application:myapp
 api_key:key_2#owner@user:bob
 api_key:key_2#created_by@user:alice
-api_key:key_2#scopes@string:users:read
-api_key:key_2#status@string:active
 
+# GET /users — public endpoint
 api_endpoint:get_users#application@application:myapp
 api_endpoint:get_users#owner@user:alice
-api_endpoint:get_users#authenticated@user:alice
-api_endpoint:get_users#authorized@user:alice
-api_endpoint:get_users#authorized@user:bob
-api_endpoint:get_users#method@string:GET
-api_endpoint:get_users#ratelimit@string:100_per_minute
+api_endpoint:get_users#public_viewer@user:*
+api_endpoint:get_users#authenticated_viewer@user:alice
+api_endpoint:get_users#authenticated_viewer@user:bob
+api_endpoint:get_users#authorized_caller@user:alice
+api_endpoint:get_users#authorized_caller@user:bob
 
+# POST /users — authenticated + authorized only
 api_endpoint:create_user#application@application:myapp
 api_endpoint:create_user#owner@user:alice
-api_endpoint:create_user#authenticated@user:alice
-api_endpoint:create_user#authorized@user:alice
-api_endpoint:create_user#method@string:POST
-api_endpoint:create_user#ratelimit@string:10_per_minute
+api_endpoint:create_user#authenticated_viewer@user:alice
+api_endpoint:create_user#authorized_caller@user:alice
 
+# DELETE /users — admin only (alice is admin via application, bob is not)
 api_endpoint:delete_user#application@application:myapp
 api_endpoint:delete_user#owner@user:alice
-api_endpoint:delete_user#authorized@user:alice
-api_endpoint:delete_user#method@string:DELETE
-api_endpoint:delete_user#ratelimit@string:5_per_hour
+api_endpoint:delete_user#authorized_caller@user:alice
 
 api_scope:users_read#application@application:myapp
-api_scope:users_read#name@string:users:read
-api_scope:users_read#permissions@string:list_users,get_user
+api_scope:users_read#granted_to@user:alice
+api_scope:users_read#granted_to@user:bob
 
 api_scope:users_write#application@application:myapp
-api_scope:users_write#name@string:users:write
-api_scope:users_write#permissions@string:create_user,update_user,delete_user
-
-api_token:token_1#application@application:myapp
-api_token:token_1#key@api_key:key_1
-api_token:token_1#scopes@api_scope:users_read
-api_token:token_1#scopes@api_scope:users_write
-api_token:token_1#expires_at@string:2025-12-31T23:59:59Z
+api_scope:users_write#granted_to@user:alice
 
 service_account:ci_account#application@application:myapp
-service_account:ci_account#keys@api_key:key_2
-service_account:ci_account#roles@string:read-only
-service_account:ci_account#environment@string:production
+service_account:ci_account#owner@user:alice

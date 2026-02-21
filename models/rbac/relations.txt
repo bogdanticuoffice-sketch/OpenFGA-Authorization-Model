@@ -1,3 +1,6 @@
+# RBAC example tuples
+# Format: object#relation@user
+
 organization:acme#admin@user:alice
 organization:acme#member@user:bob
 organization:acme#member@user:charlie
@@ -8,10 +11,11 @@ team:platform#owner@user:alice
 team:platform#member@user:bob
 team:platform#viewer@user:charlie
 
+# alice is owner of team:platform → inherits editor → inherited by project via editor from team
+# bob is member of team:platform → inherits viewer on project via viewer from team
 project:backend-api#team@team:platform
 project:backend-api#owner@user:alice
 project:backend-api#editor@user:bob
-project:backend-api#viewer@user:charlie
 
 resource:user-service#project@project:backend-api
 resource:user-service#owner@user:alice

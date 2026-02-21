@@ -13,79 +13,91 @@ Complete tutorial for implementing OpenFGA authorization in your application.
 
 ```bash
 cd deployment/docker
-docker-compose up -d
+cp .env.example .env
+# Edit .env and set a real POSTGRES_PASSWORD
+docker compose up -d
 ```
 
 Services running:
-- OpenFGA: http://localhost:8080
-- Playground: http://localhost:3000
-- Postgres: localhost:5432
+- OpenFGA HTTP API: http://localhost:8080
+- OpenFGA gRPC: localhost:8081
+- Playground (dev only): http://localhost:3000
 
-## Step 2: Create Authorization Store
+The `migrate` service runs automatically before `openfga` starts and applies
+the required database schema.
 
-Create a store to hold your authorization data:
+## Step 2: Create an Authorization Store
 
 ```bash
-curl -X POST http://localhost:8080/stores \
+curl -s -X POST http://localhost:8080/stores \
   -H 'Content-Type: application/json' \
-  -d '{"name":"my-store"}'
+  -d '{"name": "my-store"}' | jq .
 ```
 
 Response:
 ```json
 {
-  "id": "store-id-abc123",
-  "name": "my-store"
+  "id": "01HVND...",
+  "name": "my-store",
+  "created_at": "2026-02-21T10:00:00Z",
+  "updated_at": "2026-02-21T10:00:00Z"
 }
 ```
 
-Save the store ID.
+Save the store ID — you will need it for all subsequent requests.
 
-## Step 3: Write Authorization Model
+## Step 3: Write an Authorization Model
 
-Choose a model from models/ directory based on your needs.
+The OpenFGA REST API accepts a JSON body with `schema_version` and
+`type_definitions`. The `.fga` files in `models/` are DSL representations;
+to write them via the API you must either:
 
-For RBAC example:
+- Use the [OpenFGA CLI](https://github.com/openfga/cli): `fga model write --store-id <id> --file models/rbac/model.fga`
+- Or convert the DSL to JSON using the [openfga/language](https://github.com/openfga/language) transformer
+
+Example using the CLI:
 
 ```bash
-curl -X POST http://localhost:8080/stores/{store-id}/authorization-models \
-  -H 'Content-Type: application/json' \
-  -d @models/rbac/model.fga
+fga model write \
+  --api-url http://localhost:8080 \
+  --store-id 01HVND... \
+  --file models/rbac/model.fga
 ```
 
-## Step 4: Create Relationships
+Response:
+```json
+{
+  "authorization_model_id": "01HVNE..."
+}
+```
 
-Add relationships defining who has what role:
+## Step 4: Write Relationships (Tuples)
 
 ```bash
-curl -X POST http://localhost:8080/stores/{store-id}/write \
+curl -s -X POST http://localhost:8080/stores/01HVND.../write \
   -H 'Content-Type: application/json' \
   -d '{
-    "writes": [
-      {
-        "key": {
+    "writes": {
+      "tuple_keys": [
+        {
           "user": "user:alice",
           "relation": "admin",
           "object": "organization:acme"
-        }
-      },
-      {
-        "key": {
+        },
+        {
           "user": "user:bob",
           "relation": "member",
           "object": "organization:acme"
         }
-      }
-    ]
-  }'
+      ]
+    }
+  }' | jq .
 ```
 
 ## Step 5: Check Authorization
 
-Check if user has permission:
-
 ```bash
-curl -X POST http://localhost:8080/stores/{store-id}/check \
+curl -s -X POST http://localhost:8080/stores/01HVND.../check \
   -H 'Content-Type: application/json' \
   -d '{
     "tuple_key": {
@@ -93,7 +105,7 @@ curl -X POST http://localhost:8080/stores/{store-id}/check \
       "relation": "admin",
       "object": "organization:acme"
     }
-  }'
+  }' | jq .
 ```
 
 Response:
@@ -103,176 +115,94 @@ Response:
 }
 ```
 
-## Step 6: List Permissions
-
-List all resources user can access:
+## Step 6: List Accessible Objects
 
 ```bash
-curl -X POST http://localhost:8080/stores/{store-id}/list-objects \
+curl -s -X POST http://localhost:8080/stores/01HVND.../list-objects \
   -H 'Content-Type: application/json' \
   -d '{
     "user": "user:alice",
     "relation": "admin",
     "type": "organization"
-  }'
+  }' | jq .
 ```
 
 Response:
 ```json
 {
-  "objects": [
-    "organization:acme"
-  ]
+  "objects": ["organization:acme"]
 }
 ```
 
 ## Using the Playground
 
-OpenFGA Playground provides visual interface:
+OpenFGA includes a visual playground for development. It is enabled by default
+in the Docker Compose setup and **disabled in the Kubernetes deployment**.
 
 1. Open http://localhost:3000
-2. Create authorization model
+2. Create an authorization model
 3. Add relationships
-4. Test authorization checks
-5. Visualize permission structure
+4. Run authorization checks
+5. Visualize the permission graph
 
-## API Endpoints
+## Code Example — Go
 
-### Core Endpoints
-
-- POST /stores - Create store
-- GET /stores/{id} - Get store details
-- POST /stores/{id}/authorization-models - Write model
-- GET /stores/{id}/authorization-models/{model-id} - Get model
-- POST /stores/{id}/write - Write relationships
-- POST /stores/{id}/check - Check authorization
-- POST /stores/{id}/expand - Expand permissions
-- POST /stores/{id}/list-objects - List accessible objects
-- POST /stores/{id}/list-users - List users with access
-
-## Code Examples
-
-### Go Client
-
-```go
-import "github.com/openfga/go-sdk/client"
-
-// Create client
-configuration := configuration.NewConfiguration(...)
-client := client.NewSdkClient(configuration)
-
-// Check access
-response := client.Check(ctx).
-  StoreId(storeID).
-  Body(client.CheckRequest{...}).
-  Execute()
-```
-
-See examples/go/ for complete example.
-
-### Python Client
-
-```python
-from openfga_sdk import OpenFgaClient
-
-client = OpenFgaClient(
-  api_url="http://localhost:8080",
-  store_id="store-id"
-)
-
-response = client.check({
-  "user": "user:alice",
-  "relation": "admin",
-  "object": "organization:acme"
-})
-```
-
-See examples/python/ for complete example.
-
-### Node.js Client
-
-```javascript
-const { OpenFgaClient } = require('@openfga/sdk');
-
-const client = new OpenFgaClient({
-  apiUrl: 'http://localhost:8080',
-  storeId: 'store-id'
-});
-
-const response = await client.check({
-  user: 'user:alice',
-  relation: 'admin',
-  object: 'organization:acme'
-});
-```
-
-See examples/nodejs/ for complete example.
-
-## Common Patterns
-
-### User Assignment to Role
+See `examples/go/` for a working Go client. Run with:
 
 ```bash
-# Add user to admin role
-curl -X POST http://localhost:8080/stores/{id}/write \
-  -d '{
-    "writes": [{
-      "key": {
-        "user": "user:alice",
-        "relation": "admin",
-        "object": "organization:acme"
-      }
-    }]
-  }'
+cd examples/go
+go mod tidy
+go run main.go
 ```
 
-### Hierarchical Permissions
+The example demonstrates:
+- Creating a store
+- Writing an authorization model via TypeDefinitions
+- Writing relationship tuples
+- Checking access
+- Listing accessible objects
 
-Define parent-child relationships:
+## API Reference
 
-```fga
-type project
-  relations
-    define organization: [organization]
-    define editor: [user] or editor from parent_team
-```
-
-### Conditional Access
-
-Implement time-based or context-based access:
-- Business hours access
-- Location-based access
-- Device-based access
-- Require additional conditions in application
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/stores` | Create a store |
+| GET | `/stores/{id}` | Get store details |
+| POST | `/stores/{id}/authorization-models` | Write a model |
+| GET | `/stores/{id}/authorization-models/{model-id}` | Get a model |
+| POST | `/stores/{id}/write` | Write or delete tuples |
+| POST | `/stores/{id}/check` | Check authorization |
+| POST | `/stores/{id}/expand` | Expand a relation |
+| POST | `/stores/{id}/list-objects` | List objects a user can access |
+| POST | `/stores/{id}/list-users` | List users with access to an object |
 
 ## Troubleshooting
 
 ### Authorization always returns false
 
-1. Check store ID is correct
-2. Verify authorization model is written
-3. Confirm relationship exists in database
-4. Check user and object identifiers match exactly
+1. Confirm the store ID in your request matches the created store
+2. Verify the authorization model was written successfully
+3. Check that the tuple (user, relation, object) exists — query `/read` to inspect stored tuples
+4. Ensure user and object identifiers match exactly (case-sensitive)
 
-### Performance issues
+### Model write fails with validation error
 
-1. Monitor database query times
-2. Add indexes on frequently queried relations
-3. Implement caching for repeated checks
-4. Use batch operations
+1. Check the DSL syntax against the [OpenFGA language spec](https://openfga.dev/docs/configuration-language)
+2. Confirm all referenced types are defined in the model
+3. Ensure `from` expressions reference relations that exist on the linked type
 
-### Model validation errors
+### Performance
 
-1. Verify DSL syntax is correct
-2. Check type definitions are valid
-3. Ensure relation names are properly defined
+1. Monitor database query times via the OpenFGA metrics endpoint (`/metrics`)
+2. Use `ListObjects` sparingly on large datasets — it performs a graph traversal
+3. Implement application-level caching for repeated checks on stable data
+4. Use batch writes to reduce round-trips when writing many tuples at once
 
 ## Next Steps
 
-1. Choose appropriate model for your use case
-2. Implement in your application
-3. Integrate with your backend
-4. Add audit logging
-5. Test thoroughly before production deployment
+1. Choose the appropriate model for your use case from `models/`
+2. Integrate the Go SDK (or Python/Node.js SDK) into your application
+3. Add audit logging by reading from `/stores/{id}/read-changes`
+4. Test authorization rules thoroughly before production deployment
 
-See ARCHITECTURE.md for advanced topics.
+See `docs/ARCHITECTURE.md` for advanced topics.

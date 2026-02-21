@@ -1,12 +1,6 @@
-FROM openfga/openfga:latest
+# Use a pinned version for reproducible builds.
+# The upstream image already sets ENTRYPOINT to the openfga binary.
+FROM openfga/openfga:v1.5.3
 
-WORKDIR /app
-
-ENV OPENFGA_DATASTORE_ENGINE=postgres
-ENV OPENFGA_LOG_LEVEL=info
-ENV OPENFGA_HTTP_ADDR=0.0.0.0:8080
-ENV OPENFGA_GRPC_ADDR=0.0.0.0:8081
-
-EXPOSE 8080 8081 3000
-
+# Default to run mode. Override with "migrate" for schema migrations.
 CMD ["run"]

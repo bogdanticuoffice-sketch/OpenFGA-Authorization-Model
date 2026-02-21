@@ -1,34 +1,14 @@
-version: '3.8'
-
 services:
-  openfga:
-    image: openfga/openfga:latest
-    ports:
-      - "8080:8080"
-      - "8081:8081"
-      - "3000:3000"
-    environment:
-      - OPENFGA_DATASTORE_ENGINE=postgres
-      - OPENFGA_DATASTORE_URI=postgres://openfga:password@postgres:5432/openfga
-      - OPENFGA_LOG_LEVEL=info
-    depends_on:
-      - postgres
-    volumes:
-      - ./models:/models
-    networks:
-      - openfga_network
-
   postgres:
     image: postgres:15-alpine
     ports:
       - "5432:5432"
     environment:
       - POSTGRES_USER=openfga
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=openfga
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - openfga_network
     healthcheck:
@@ -36,6 +16,40 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  migrate:
+    image: openfga/openfga:v1.5.3
+    command: migrate
+    environment:
+      - OPENFGA_DATASTORE_ENGINE=postgres
+      - OPENFGA_DATASTORE_URI=postgres://openfga:${POSTGRES_PASSWORD}@postgres:5432/openfga
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - openfga_network
+
+  openfga:
+    image: openfga/openfga:v1.5.3
+    command: run
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+      - "3000:3000"
+    environment:
+      - OPENFGA_DATASTORE_ENGINE=postgres
+      - OPENFGA_DATASTORE_URI=postgres://openfga:${POSTGRES_PASSWORD}@postgres:5432/openfga
+      - OPENFGA_LOG_LEVEL=${OPENFGA_LOG_LEVEL:-info}
+      - OPENFGA_HTTP_ADDR=0.0.0.0:8080
+      - OPENFGA_GRPC_ADDR=0.0.0.0:8081
+      - OPENFGA_PLAYGROUND_ENABLED=${OPENFGA_PLAYGROUND_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - openfga_network
 
 volumes:
   postgres_data:

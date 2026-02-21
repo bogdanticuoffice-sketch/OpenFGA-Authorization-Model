@@ -1,3 +1,6 @@
+# SaaS multi-tenant example tuples
+# Format: object#relation@user
+
 tenant:acme#owner@user:alice
 tenant:acme#admin@user:bob
 tenant:acme#member@user:charlie
@@ -18,57 +21,37 @@ workspace:techcorp_ops#admin@user:frank
 workspace:techcorp_ops#member@user:grace
 
 project:backend_api#workspace@workspace:acme_main
-project:backend_api#tenant@tenant:acme
 project:backend_api#owner@user:alice
 project:backend_api#admin@user:bob
 project:backend_api#member@user:charlie
 
 project:infrastructure#workspace@workspace:techcorp_ops
-project:infrastructure#tenant@tenant:techcorp
 project:infrastructure#owner@user:eve
 project:infrastructure#admin@user:frank
 project:infrastructure#member@user:grace
 
 resource:api_keys#project@project:backend_api
-resource:api_keys#workspace@workspace:acme_main
-resource:api_keys#tenant@tenant:acme
 resource:api_keys#owner@user:alice
 resource:api_keys#editor@user:bob
 resource:api_keys#viewer@user:charlie
 
 resource:secrets#project@project:infrastructure
-resource:secrets#workspace@workspace:techcorp_ops
-resource:secrets#tenant@tenant:techcorp
 resource:secrets#owner@user:eve
 resource:secrets#editor@user:frank
 resource:secrets#viewer@user:grace
 
 role:tenant_admin#tenant@tenant:acme
-role:tenant_admin#name@string:Tenant Administrator
-role:tenant_admin#permissions@string:manage_members,create_workspace,manage_billing
-
-role:workspace_member#tenant@tenant:acme
-role:workspace_member#name@string:Workspace Member
-role:workspace_member#permissions@string:view_projects,create_issues,read_resources
+role:tenant_admin#assignee@user:bob
 
 role:workspace_admin#tenant@tenant:techcorp
-role:workspace_admin#name@string:Workspace Admin
-role:workspace_admin#permissions@string:manage_members,create_projects,edit_resources
+role:workspace_admin#assignee@user:frank
 
 invitation:inv_1#tenant@tenant:acme
 invitation:inv_1#inviter@user:alice
 invitation:inv_1#invitee@user:new_user
-invitation:inv_1#role@string:workspace_member
-invitation:inv_1#expires_at@string:2025-01-15T00:00:00Z
 
 audit_log:log_1#tenant@tenant:acme
-audit_log:log_1#user@user:alice
-audit_log:log_1#action@string:created_resource
-audit_log:log_1#resource@string:resource:api_keys
-audit_log:log_1#timestamp@string:2024-12-15T10:30:00Z
+audit_log:log_1#actor@user:alice
 
 audit_log:log_2#tenant@tenant:acme
-audit_log:log_2#user@user:bob
-audit_log:log_2#action@string:updated_member
-audit_log:log_2#resource@string:workspace:acme_main
-audit_log:log_2#timestamp@string:2024-12-15T10:35:00Z
+audit_log:log_2#actor@user:bob

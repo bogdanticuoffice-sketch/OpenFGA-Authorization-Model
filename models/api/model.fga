@@ -7,42 +7,32 @@ type application
   relations
     define owner: [user]
     define admin: [user]
+    define member: [user]
+    define can_manage: [user] or admin or owner
+
+type api_scope
+  relations
+    define application: [application]
+    define granted_to: [user] or member from application
 
 type api_key
   relations
     define application: [application]
     define owner: [user]
     define created_by: [user]
-    define scopes: [string]
-    define status: [string]
+    define can_use: [user] or owner or admin from application
 
 type api_endpoint
   relations
     define application: [application]
     define owner: [user]
-    define public: [user]
-    define authenticated: [user]
-    define authorized: [user]
-    define method: [string]
-    define ratelimit: [string]
-
-type api_scope
-  relations
-    define application: [application]
-    define name: [string]
-    define permissions: [string]
-
-type api_token
-  relations
-    define application: [application]
-    define key: [api_key]
-    define scopes: [api_scope]
-    define expires_at: [string]
-    define revoked: [string]
+    # public_viewer: wildcard — any user can access (unauthenticated endpoints)
+    define public_viewer: [user:*]
+    define authenticated_viewer: [user]
+    define authorized_caller: [user] or admin from application
 
 type service_account
   relations
     define application: [application]
-    define keys: [api_key]
-    define roles: [string]
-    define environment: [string]
+    define owner: [user]
+    define can_manage: [user] or admin from application

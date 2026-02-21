@@ -1,41 +1,38 @@
 model
   schema 1.1
 
+# Condition: restrict access to business hours (9am–5pm UTC)
+condition is_within_business_hours(current_time: timestamp) {
+  current_time.getHours() >= 9 && current_time.getHours() <= 17
+}
+
+# Condition: restrict access to users from a specific department
+condition same_department(user_dept: string, resource_dept: string) {
+  user_dept == resource_dept
+}
+
 type user
 
 type organization
   relations
-    define department: [organization]
-    define resource_type: [string]
-    define budget_limit: [string]
+    define admin: [user]
+    define member: [user]
 
 type department
   relations
     define organization: [organization]
-    define parent_department: [department]
+    define parent: [department]
     define manager: [user]
     define member: [user]
+    define viewer: [user] or member or manager
 
 type resource
   relations
     define organization: [organization]
-    define owner: [user]
-    define resource_type: [string]
-    define classification: [string]
-
-type permission
-  relations
-    define subject: [user]
-    define resource: [resource]
-    define action: [string]
-    define conditions: [string]
-    define status: [string]
-
-type policy
-  relations
-    define subject_type: [string]
-    define resource_type: [string]
-    define action: [string]
     define department: [department]
-    define classification: [string]
-    define effect: [string]
+    define owner: [user]
+    # reader: directly assigned, or assigned only during business hours
+    define reader: [user, user with is_within_business_hours]
+    define writer: [user]
+    # dept_reader: access granted only when caller's department matches resource department
+    define dept_reader: [user with same_department]

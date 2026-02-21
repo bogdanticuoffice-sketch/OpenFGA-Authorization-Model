@@ -14,25 +14,26 @@ type team
     define organization: [organization]
     define owner: [user]
     define member: [user]
-    define viewer: [user]
+    define editor: [user] or owner
+    define viewer: [user] or editor or member
 
 type project
   relations
     define team: [team]
     define owner: [user]
-    define editor: [user] or editor from parent_team
-    define viewer: [user] or viewer from parent_team
+    define editor: [user] or owner or editor from team
+    define viewer: [user] or editor or viewer from team
 
 type resource
   relations
     define project: [project]
     define owner: [user]
-    define editor: [user] or editor from parent_project
-    define viewer: [user] or viewer from parent_project
+    define editor: [user] or owner or editor from project
+    define viewer: [user] or editor or viewer from project
 
 type document
   relations
     define resource: [resource]
     define owner: [user]
-    define editor: [user] or editor from parent_resource
-    define viewer: [user] or viewer from parent_resource
+    define editor: [user] or owner or editor from resource
+    define viewer: [user] or editor or viewer from resource

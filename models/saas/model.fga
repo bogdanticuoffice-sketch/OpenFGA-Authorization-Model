@@ -6,51 +6,51 @@ type user
 type tenant
   relations
     define owner: [user]
-    define admin: [user]
-    define member: [user]
+    define admin: [user] or owner
+    define member: [user] or admin
+    define can_manage: [user] or admin
+    define can_view: [user] or member
 
 type workspace
   relations
     define tenant: [tenant]
     define owner: [user]
-    define admin: [user]
-    define member: [user]
+    define admin: [user] or owner or admin from tenant
+    define member: [user] or admin
+    define can_manage: [user] or admin
+    define can_view: [user] or member
 
 type project
   relations
     define workspace: [workspace]
-    define tenant: [tenant]
     define owner: [user]
-    define admin: [user]
-    define member: [user]
+    define admin: [user] or owner or admin from workspace
+    define member: [user] or admin
+    define can_manage: [user] or admin
+    define can_view: [user] or member
 
 type resource
   relations
     define project: [project]
-    define workspace: [workspace]
-    define tenant: [tenant]
     define owner: [user]
-    define editor: [user]
-    define viewer: [user]
+    define editor: [user] or owner or admin from project
+    define viewer: [user] or editor or member from project
 
 type invitation
   relations
     define tenant: [tenant]
     define inviter: [user]
     define invitee: [user]
-    define role: [string]
-    define expires_at: [string]
+    define can_manage: [user] or admin from tenant
 
 type role
   relations
     define tenant: [tenant]
-    define name: [string]
-    define permissions: [string]
+    define assignee: [user]
+    define can_manage: [user] or admin from tenant
 
 type audit_log
   relations
     define tenant: [tenant]
-    define user: [user]
-    define action: [string]
-    define resource: [string]
-    define timestamp: [string]
+    define actor: [user]
+    define can_view: [user] or admin from tenant

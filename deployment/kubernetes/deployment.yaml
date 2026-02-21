@@ -22,18 +22,16 @@ spec:
 
       containers:
       - name: openfga
-        image: openfga/openfga:latest
+        image: openfga/openfga:v1.5.3
         imagePullPolicy: IfNotPresent
-        
+        command: ["run"]
+
         ports:
         - name: http
           containerPort: 8080
           protocol: TCP
         - name: grpc
           containerPort: 8081
-          protocol: TCP
-        - name: playground
-          containerPort: 3000
           protocol: TCP
 
         env:
@@ -50,6 +48,8 @@ spec:
           value: "0.0.0.0:8080"
         - name: OPENFGA_GRPC_ADDR
           value: "0.0.0.0:8081"
+        - name: OPENFGA_PLAYGROUND_ENABLED
+          value: "false"
 
         resources:
           requests:
@@ -88,13 +88,9 @@ spec:
         volumeMounts:
         - name: tmp
           mountPath: /tmp
-        - name: cache
-          mountPath: /app/cache
 
       volumes:
       - name: tmp
-        emptyDir: {}
-      - name: cache
         emptyDir: {}
 
       affinity:

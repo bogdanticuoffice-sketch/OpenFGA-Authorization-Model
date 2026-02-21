@@ -1,5 +1,22 @@
-organization:acme#department@organization:acme
-organization:acme#resource_type@string:document,database,api
+# ABAC example tuples
+# Format: object#relation@user
+#
+# NOTE: Condition-based relations (reader with is_within_business_hours,
+# dept_reader with same_department) require contextual data at check time.
+# When writing those tuples via the API, include the condition name:
+#
+#   {
+#     "user": "user:bob",
+#     "relation": "reader",
+#     "object": "resource:api-key-service",
+#     "condition": { "name": "is_within_business_hours", "context": {} }
+#   }
+#
+# The tuples below show direct (unconditional) assignments.
+
+organization:acme#admin@user:alice
+organization:acme#member@user:bob
+organization:acme#member@user:charlie
 
 department:engineering#organization@organization:acme
 department:engineering#manager@user:alice
@@ -11,36 +28,13 @@ department:finance#manager@user:dave
 department:finance#member@user:eve
 
 resource:api-key-service#organization@organization:acme
+resource:api-key-service#department@department:engineering
 resource:api-key-service#owner@user:alice
-resource:api-key-service#resource_type@string:api
-resource:api-key-service#classification@string:confidential
+# bob can read api-key-service only during business hours (conditional tuple)
+# resource:api-key-service#reader@user:bob  (with condition: is_within_business_hours)
 
 resource:budget-report#organization@organization:acme
+resource:budget-report#department@department:finance
 resource:budget-report#owner@user:dave
-resource:budget-report#resource_type@string:document
-resource:budget-report#classification@string:restricted
-
-permission:p1#subject@user:bob
-permission:p1#resource@resource:api-key-service
-permission:p1#action@string:read,list
-permission:p1#conditions@string:business_hours
-permission:p1#status@string:active
-
-permission:p2#subject@user:eve
-permission:p2#resource@resource:budget-report
-permission:p2#action@string:read
-permission:p2#conditions@string:department_finance
-permission:p2#status@string:active
-
-policy:policy1#subject_type@string:employee
-policy:policy1#resource_type@string:document
-policy:policy1#action@string:read,write
-policy:policy1#department@department:engineering
-policy:policy1#classification@string:internal
-policy:policy1#effect@string:allow
-
-policy:policy2#subject_type@string:contractor
-policy:policy2#resource_type@string:api
-policy:policy2#action@string:read
-policy:policy2#classification@string:public
-policy:policy2#effect@string:allow
+# eve can read budget-report only when user_dept == "finance" (conditional tuple)
+# resource:budget-report#dept_reader@user:eve  (with condition: same_department)
