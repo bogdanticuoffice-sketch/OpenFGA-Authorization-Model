@@ -1,0 +1,25 @@
+# Go build artifacts
+/bin/
+*.exe
+*.test
+*.out
+vendor/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Kubernetes secrets
+*secret*.yaml
+*secret*.yml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
